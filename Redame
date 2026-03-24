@@ -38,3 +38,28 @@ npm install @prisma/client
 
 npm install node-cron
 npm install -D @types/node-cron
+
+
+
+Como o Sistema Funciona
+ Recebimento de Mensagens (Webhook)
+A Evolution API envia notificações para o sistema sempre que algo acontece no WhatsApp do corretor. O sistema processa dois tipos de eventos:
+
+connection.update
+Disparado quando o corretor escaneia o QR code e conecta o WhatsApp. O sistema cria automaticamente o registro do corretor no banco de dados usando a instância da Evolution como identificador único.
+messages.upsert
+Disparado quando uma mensagem é enviada ou recebida. O sistema salva a mensagem no banco com o campo fromMe indicando se foi o corretor (true) ou o cliente (false) quem enviou. Se o cliente responder, o follow-up é automaticamente resetado.
+
+ Follow-up Automático (Cron Job)
+A cada 30 minutos o sistema executa uma verificação automática seguindo estas regras:
+•	Busca todos os clientes que não finalizaram o follow-up
+•	Filtra apenas os clientes onde a última mensagem foi do corretor (cliente ficou no vácuo)
+•	Verifica se já passou 24 horas desde o último envio
+•	Envia a próxima mensagem da sequência
+•	Atualiza o banco registrando o envio e avançando a sequência
+•	Se atingir 15 mensagens, marca o follow-up como finalizado
+
+//Criar as tabelas no banco
+npx prisma migrate dev
+
+O sistema possui 15 mensagens pré-definidas enviadas em ordem para cada cliente que ficou no vácuo. As mensagens estão configuradas no arquivo src/mensagens.ts e podem ser personalizadas a qualquer momento.
