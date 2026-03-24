@@ -28,6 +28,11 @@ model Cliente {
   nome       String?
   criadoEm  DateTime @default(now())
 
+  // Campos do follow-up
+  sequenciaAtual    Int       @default(0)   // qual mensagem foi enviada por último (0 = nenhuma)
+  ultimoEnvio       DateTime?               // quando foi o último envio
+  followUpFinalizado Boolean  @default(false) // se já enviou as 15 mensagens
+
   corretorId String
   corretor   Corretor @relation(fields: [corretorId], references: [id])
 
@@ -39,6 +44,7 @@ model Mensagem {
   conteudo   String
   timestamp  DateTime
   respondido Boolean  @default(false)
+  fromMe     Boolean  @default(false)  // ← true = corretor mandou, false = cliente mandou
   criadoEm  DateTime @default(now())
 
   clienteId String

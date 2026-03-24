@@ -1,82 +1,95 @@
 import 'dotenv/config';
 import cron from 'node-cron';
 import prisma from './database';
-import Anthropic from '@anthropic-ai/sdk';
 import { enviarMensagem } from './evolution';
+import { MENSAGENS_FOLLOWUP } from './mensagens';
 
-const claude = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY!
-});
+export async function verificarSemResposta() {
+    console.log('🔍 Verificando clientes no vácuo...');
 
-async function verificarSemResposta() {
-    console.log('🔍 Verificando mensagens sem resposta...');
-
-    // Pega a data de 24h atrás
     const vintequatroHorasAtras = new Date();
     vintequatroHorasAtras.setHours(vintequatroHorasAtras.getHours() - 24);
 
-    // Busca mensagens não respondidas há mais de 24h
-    const mensagensPendentes = await prisma.mensagem.findMany({
+
+    const clientesPendentes = await prisma.cliente.findMany({
         where: {
-            respondido: false,
-            timestamp: { lte: vintequatroHorasAtras }
+            followUpFinalizado: false,
+            OR: [
+                { ultimoEnvio: null },
+                { ultimoEnvio: { lte: vintequatroHorasAtras } }
+            ]
         },
-        include: {
-            cliente: {
-                include: { corretor: true }
-            }
-        }
+        include: { corretor: true }
     });
 
-    console.log(`📋 Encontradas ${mensagensPendentes.length} mensagens pendentes`);
+    // Filtra só clientes onde a última mensagem foi do CORRETOR
+    const clientesNoVacuo = await Promise.all(
+        clientesPendentes.map(async (cliente) => {
+            const ultimaMensagem = await prisma.mensagem.findFirst({
+                where: { clienteId: cliente.id },
+                orderBy: { timestamp: 'desc' }
+            });
 
-    for (const mensagem of mensagensPendentes) {
-        const corretor = mensagem.cliente.corretor;
-        const cliente = mensagem.cliente;
+            // Só entra no follow-up se a última mensagem foi do corretor
+            if (ultimaMensagem && ultimaMensagem.fromMe) {
+                return cliente;
+            }
+            return null;
+        })
+    );
 
-        console.log(`💬 Gerando resposta para: ${cliente.telefone}`);
+    const clientesFiltrados = clientesNoVacuo.filter(Boolean) as any[];
 
-        // Pede para o Claude gerar uma resposta
-        const resposta = await claude.messages.create({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 1024,
-            messages: [{
-                role: 'user',
-                content: `
-                    Você é um corretor de imóveis profissional e atencioso chamado ${corretor.nome}.
-                    Um cliente entrou em contato há mais de 24 horas e ainda não foi respondido.
-                    
-                    Última mensagem do cliente: "${mensagem.conteudo}"
-                    
-                    Escreva uma mensagem curta, educada e profissional retomando o contato.
-                    Não prometa nada específico. Apenas demonstre interesse em ajudar.
-                    Responda apenas com o texto da mensagem, sem explicações.
-                `
-            }]
-        });
+    console.log(`📋 Encontrados ${clientesFiltrados.length} clientes no vácuo`);
 
-        const textoDaResposta = resposta.content[0].type === 'text'
-            ? resposta.content[0].text
-            : '';
+    for (const cliente of clientesFiltrados) {
+        const proximaSequencia = cliente.sequenciaAtual + 1;
 
-        // Envia a resposta pelo WhatsApp
-        await enviarMensagem(corretor.instancia, cliente.telefone, textoDaResposta);
+        if (proximaSequencia > MENSAGENS_FOLLOWUP.length) {
+            await prisma.cliente.update({
+                where: { id: cliente.id },
+                data: { followUpFinalizado: true }
+            });
+            console.log(`😘Follow-up finalizado para: ${cliente.telefone}`);
+            continue;
+        }
 
-        // Marca a mensagem como respondida
-        await prisma.mensagem.update({
-            where: { id: mensagem.id },
-            data: { respondido: true }
-        });
+        const mensagem = MENSAGENS_FOLLOWUP[proximaSequencia - 1];
 
-        console.log(`✅ Resposta enviada para: ${cliente.telefone}`);
+        try {
+            const resultado = await enviarMensagem(
+                cliente.corretor.instancia,
+                cliente.telefone,
+                mensagem
+            );
+
+            if (!resultado || resultado.error) {
+                console.log(`⚠️ Erro ao enviar para: ${cliente.telefone}`);
+                continue;
+            }
+
+            await prisma.cliente.update({
+                where: { id: cliente.id },
+                data: {
+                    sequenciaAtual: proximaSequencia,
+                    ultimoEnvio: new Date(),
+                    followUpFinalizado: proximaSequencia === MENSAGENS_FOLLOWUP.length
+                }
+            });
+
+            console.log(`✅ Corretor: ${cliente.corretor.nome} | Cliente: ${cliente.telefone} | Mensagem: ${proximaSequencia}/15`);
+
+        } catch (erro) {
+            console.log(`❌ Erro ao enviar para ${cliente.telefone}`);
+        }
     }
+
+    console.log('✅ Verificação concluída!');
 }
 
-// Roda a cada 30 minutos
 export function iniciarFollowUp() {
     console.log('⏰ Follow-up automático iniciado!');
-
-    cron.schedule('*/30 * * * *', () => {
+    cron.schedule('* * * * *', () => {
         verificarSemResposta();
     });
 }
