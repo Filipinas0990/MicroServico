@@ -31,3 +31,10 @@ npx prisma init
 
 //nstala o Prisma Client, o ORM utilizado para comunicação com o banco de dados
 npm install @prisma/client
+
+
+
+// Instalalando o cron job
+
+npm install node-cron
+npm install -D @types/node-cron
