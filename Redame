@@ -1,0 +1,33 @@
+Comandos iniciais para iniciar o projeto 
+
+
+//npm init -y
+
+
+// Instalçao do Express
+npm install express
+
+// Ler as variaveis de Ambiente
+npm install dotenv
+
+
+// Instalação do typescript e suas dependencias
+npm i -D typescript tsx
+
+//regra de segurança do navegador
+npm install cors
+
+
+//Comando para instação do pacote da OpenIa
+npm install openai
+
+
+//Instação da ORM, prisma 
+npm install prisma --save-dev
+
+//Excução do pacote Prisma
+npx prisma init
+
+
+//nstala o Prisma Client, o ORM utilizado para comunicação com o banco de dados
+npm install @prisma/client
