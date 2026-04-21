@@ -1,13 +1,20 @@
+<<<<<<< HEAD
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
+=======
+// ─────────────────────────────────────────
+// GERADOR E CONEXÃO
+// ─────────────────────────────────────────
+>>>>>>> 04f607e (Refazendo arquivos)
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
+<<<<<<< HEAD
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
@@ -50,3 +57,95 @@ model Mensagem {
   clienteId String
   cliente   Cliente @relation(fields: [clienteId], references: [id])
 }
+=======
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────
+// CORRETOR
+// Cada corretor tem sua própria instância
+// WhatsApp e seus próprios clientes
+// ─────────────────────────────────────────
+model Corretor {
+  id        String   @id @default(uuid())
+  nome      String
+  instancia String   @unique  // instância na Evolution API
+  ativo     Boolean  @default(true)
+  criadoEm  DateTime @default(now())
+
+  clientes  Cliente[]
+
+  @@map("corretores")
+}
+
+// ─────────────────────────────────────────
+// CLIENTE
+// Cada cliente pertence a um corretor
+// e tem seu próprio ciclo de follow-up
+// ─────────────────────────────────────────
+model Cliente {
+  id                String    @id @default(uuid())
+  telefone          String
+  nome              String?   // preenchido se vier no webhook
+  criadoEm          DateTime  @default(now())
+
+  // Controle da IA (botão do front)
+  iaAtiva           Boolean   @default(true)
+
+  // Controle do follow-up
+  sequenciaAtual    Int       @default(0)
+  ultimoEnvio       DateTime?
+  followUpFinalizado Boolean  @default(false)
+
+  // Relacionamentos
+  corretorId        String
+  corretor          Corretor  @relation(fields: [corretorId], references: [id])
+  mensagens         Mensagem[]
+
+  // Um cliente é único por telefone + corretor
+  @@unique([telefone, corretorId])
+  @@map("clientes")
+}
+
+// ─────────────────────────────────────────
+// MENSAGEM
+// Histórico completo de cada conversa
+// fromMe = true  → mensagem do corretor/IA
+// fromMe = false → mensagem do cliente
+// ─────────────────────────────────────────
+model Mensagem {
+  id        String   @id @default(uuid())
+  conteudo  String
+  fromMe    Boolean  // true = corretor, false = cliente
+  timestamp DateTime
+  criadoEm  DateTime @default(now())
+
+  // Identifica se foi gerada pela IA ou pelo corretor humano
+  geradaPorIA Boolean @default(false)
+
+  clienteId String
+  cliente   Cliente @relation(fields: [clienteId], references: [id])
+
+  @@index([clienteId, timestamp])  // index para buscar histórico rápido
+  @@map("mensagens")
+}
+
+// ─────────────────────────────────────────
+// LOG DE FOLLOW-UP
+// Rastreio de cada tentativa de follow-up
+// útil para debug e relatórios futuros
+// ─────────────────────────────────────────
+model LogFollowUp {
+  id         String   @id @default(uuid())
+  clienteId  String
+  sequencia  Int
+  mensagem   String
+  enviado    Boolean
+  erro       String?  // mensagem de erro se falhou
+  criadoEm   DateTime @default(now())
+
+  @@index([clienteId])
+  @@map("logs_followup")
+}
+>>>>>>> 04f607e (Refazendo arquivos)

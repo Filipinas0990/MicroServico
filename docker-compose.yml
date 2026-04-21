@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+
+  followup:
+    build: .
+    container_name: followup-corretores
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:3000/saude" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - followup-network
+
+  # ─────────────────────────────────────────
+  # BANCO DE DADOS — PostgreSQL
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: followup-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: followup_user # TROQUE AQUI
+      POSTGRES_PASSWORD: Str0ng#Pass2024 # TROQUE AQUI
+      POSTGRES_DB: followup_db
+    ports:
+      - "5434:5432" # Remova esta linha em produção na AWS
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U followup_user -d followup_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - followup-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: followup-redis
+    restart: always
+    command: redis-server --requirepass R3d1s#Pass2024 # TROQUE AQUI
+    ports:
+      - "6379:6379" # Remova esta linha em produção na AWS
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "R3d1s#Pass2024", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - followup-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  followup-network:
+    driver: bridge
