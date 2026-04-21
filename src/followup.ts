@@ -1,14 +1,14 @@
 import 'dotenv/config';
 import cron from 'node-cron';
 import pLimit from 'p-limit';
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import prisma from './database';
 import { enviarMensagem, verificarInstancia } from './evolution';
 
 // ─────────────────────────────────────────
 // CLIENTES
 // ─────────────────────────────────────────
-const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const claude = new OpenAI({ apiKey: process.env.OpenAI_API_KEY });
 const limite = pLimit(10); // máx 10 corretores processando ao mesmo tempo
 
 // ─────────────────────────────────────────
