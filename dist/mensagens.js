@@ -1,0 +1,21 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.MENSAGENS_FOLLOWUP = void 0;
+exports.MENSAGENS_FOLLOWUP = [
+    "Olá! Vi que você entrou em contato conosco. Posso te ajudar a encontrar o imóvel ideal! 😊",
+    "Oi! Ainda estou à disposição para te ajudar. Tem alguma dúvida sobre nossos imóveis?",
+    "Olá! Temos novidades incríveis em imóveis essa semana. Posso te apresentar algumas opções?",
+    "Oi! Só passando para saber se você ainda tem interesse. Estou aqui para ajudar! 🏠",
+    "Olá! Temos ótimas condições de financiamento no momento. Quer saber mais?",
+    "Oi! Separei algumas opções de imóveis que podem te interessar. Posso compartilhar?",
+    "Olá! Caso ainda esteja procurando um imóvel, estou à disposição para uma conversa rápida.",
+    "Oi! Temos imóveis com entrada facilitada essa semana. Posso te apresentar as condições?",
+    "Olá! Só lembrando que estou aqui caso precise de qualquer informação sobre imóveis. 😊",
+    "Oi! Uma oportunidade especial surgiu e pensei em você. Posso te contar mais?",
+    "Olá! Ainda estou disponível para te ajudar a encontrar o imóvel dos seus sonhos! 🏡",
+    "Oi! Caso queira visitar algum imóvel, é só me avisar que agendo para você!",
+    "Olá! Temos condições especiais para fechamentos esse mês. Quer saber mais detalhes?",
+    "Oi! Só passando para reforçar que estou aqui para qualquer dúvida sobre imóveis.",
+    "Olá! Essa é minha última mensagem por aqui. Se precisar de mim é só chamar! 😊🏠",
+];
+//# sourceMappingURL=mensagens.js.map

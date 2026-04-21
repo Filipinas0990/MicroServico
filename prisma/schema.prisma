@@ -1,63 +1,11 @@
-<<<<<<< HEAD
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
-=======
 // ─────────────────────────────────────────
 // GERADOR E CONEXÃO
 // ─────────────────────────────────────────
->>>>>>> 04f607e (Refazendo arquivos)
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-<<<<<<< HEAD
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
-}
-
-model Corretor {
-  id        String   @id @default(uuid())
-  instancia String   @unique
-  nome      String
-  criadoEm DateTime @default(now())
-
-  clientes Cliente[]
-}
-
-model Cliente {
-  id         String   @id @default(uuid())
-  telefone   String
-  nome       String?
-  criadoEm  DateTime @default(now())
-
-  // Campos do follow-up
-  sequenciaAtual    Int       @default(0)   // qual mensagem foi enviada por último (0 = nenhuma)
-  ultimoEnvio       DateTime?               // quando foi o último envio
-  followUpFinalizado Boolean  @default(false) // se já enviou as 15 mensagens
-
-  corretorId String
-  corretor   Corretor @relation(fields: [corretorId], references: [id])
-
-  mensagens Mensagem[]
-}
-
-model Mensagem {
-  id         String   @id @default(uuid())
-  conteudo   String
-  timestamp  DateTime
-  respondido Boolean  @default(false)
-  fromMe     Boolean  @default(false)  // ← true = corretor mandou, false = cliente mandou
-  criadoEm  DateTime @default(now())
-
-  clienteId String
-  cliente   Cliente @relation(fields: [clienteId], references: [id])
-}
-=======
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
@@ -148,4 +96,3 @@ model LogFollowUp {
   @@index([clienteId])
   @@map("logs_followup")
 }
->>>>>>> 04f607e (Refazendo arquivos)
