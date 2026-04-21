@@ -39,22 +39,10 @@ npm install @prisma/client
 npm install node-cron
 npm install -D @types/node-cron
 
-
-<<<<<<< HEAD
-
-=======
-//Instalçaão do Axios que serve para requisições HTTP
-npm install prisma --save-dev
-
-//Usado para controlar quantas tarefas assincronas rodam ao mesmo tempo
-
-npm install p-limit
+//Criar as tabelas no banco
+npx prisma migrate dev
 
 
--------------------------------------------------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------------------------------------------------------
->>>>>>> 04f607e (Refazendo arquivos)
 Como o Sistema Funciona
  Recebimento de Mensagens (Webhook)
 A Evolution API envia notificações para o sistema sempre que algo acontece no WhatsApp do corretor. O sistema processa dois tipos de eventos:
@@ -73,7 +61,6 @@ A cada 30 minutos o sistema executa uma verificação automática seguindo estas
 •	Atualiza o banco registrando o envio e avançando a sequência
 •	Se atingir 15 mensagens, marca o follow-up como finalizado
 
-//Criar as tabelas no banco
-npx prisma migrate dev
+
 
 O sistema possui 15 mensagens pré-definidas enviadas em ordem para cada cliente que ficou no vácuo. As mensagens estão configuradas no arquivo src/mensagens.ts e podem ser personalizadas a qualquer momento.
