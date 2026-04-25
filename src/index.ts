@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import webhookRouter from './webhook';
 import { iniciarFollowUp } from './followup';
+import corretoresRouter from './corretores';
 
 const app = express();
 const PORTA = Number(process.env.PORT ?? 3000);
@@ -17,7 +18,7 @@ app.use(express.json());
 // ROTAS
 // ─────────────────────────────────────────
 app.use('/', webhookRouter);
-
+app.use('/corretores', corretoresRouter);
 // Healthcheck — usado pelo Docker para saber se o container está vivo
 app.get('/saude', (req, res) => {
     res.json({
