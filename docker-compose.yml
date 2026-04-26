@@ -31,8 +31,8 @@ services:
     container_name: followup-postgres
     restart: always
     environment:
-      POSTGRES_USER: filipe # TROQUE AQUI
-      POSTGRES_PASSWORD: Kelmor123@ # TROQUE AQUI
+      POSTGRES_USER: followup_userI
+      POSTGRES_PASSWORD: Kelmor123@
       POSTGRES_DB: followup_db
     ports:
       - "5434:5432" # Remova esta linha em produção na AWS

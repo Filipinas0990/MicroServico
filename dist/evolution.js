@@ -51,12 +51,27 @@ const http = axios_1.default.create({
     },
 });
 // ─────────────────────────────────────────
+// FORMATA NÚMERO BRASILEIRO
+// Remove o 9 extra de números com 13 dígitos
+// Ex: 5531714653949 → 553171465394
+// ─────────────────────────────────────────
+function formatarNumero(telefone) {
+    // Remove o sufixo @s.whatsapp.net se vier junto
+    const numero = telefone.replace('@s.whatsapp.net', '');
+    // Se tiver 13 dígitos (55 + DDD + 9 + 8 dígitos), remove o nono dígito
+    if (numero.length === 13 && numero.startsWith('55')) {
+        return numero.slice(0, 4) + numero.slice(5);
+    }
+    return numero;
+}
+// ─────────────────────────────────────────
 // ENVIAR MENSAGEM DE TEXTO
 // ─────────────────────────────────────────
 async function enviarMensagem(instancia, telefone, mensagem) {
     try {
+        const numeroFormatado = formatarNumero(telefone);
         await http.post(`/message/sendText/${instancia}`, {
-            number: telefone,
+            number: numeroFormatado,
             text: mensagem,
         });
         return { sucesso: true };
