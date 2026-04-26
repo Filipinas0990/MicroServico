@@ -16,14 +16,25 @@ router.post('/webhook', async (req: Request, res: Response) => {
 
     const instancia = evento.instance;
     const telefone = evento.data?.key?.remoteJid;
-    const ehMinha = evento.data?.key?.fromMe;
-    const conteudo = evento.data?.message?.conversation
-        ?? evento.data?.message?.extendedTextMessage?.text
-        ?? null;
+    const ehMinha = evento.data?.key?.fromMe ?? false;
     const timestamp = evento.data?.messageTimestamp;
+    const msg = evento.data?.message;
 
-    // Ignora se não tiver conteúdo de texto
-    if (!conteudo || !telefone) {
+    // ── Extrai conteúdo de qualquer tipo de mensagem ──────────
+    const conteudo = msg?.conversation
+        ?? msg?.extendedTextMessage?.text
+        ?? msg?.imageMessage?.caption
+        ?? msg?.videoMessage?.caption
+        ?? msg?.documentMessage?.title
+        ?? (msg?.audioMessage ? '[Áudio]' : null)
+        ?? (msg?.stickerMessage ? '[Figurinha]' : null)
+        ?? (msg?.locationMessage ? '[Localização]' : null)
+        ?? (msg?.contactMessage ? '[Contato]' : null)
+        ?? (msg?.reactionMessage ? '[Reação]' : null)
+        ?? '[Mensagem]';
+
+    // Ignora se não tiver telefone ou for mensagem de grupo
+    if (!telefone || telefone.endsWith('@g.us')) {
         return res.status(200).json({ recebido: true });
     }
 
@@ -58,14 +69,14 @@ router.post('/webhook', async (req: Request, res: Response) => {
             data: {
                 conteudo,
                 fromMe: ehMinha,
-                geradaPorIA: false, // mensagem humana
+                geradaPorIA: false,
                 timestamp: new Date(timestamp * 1000),
                 clienteId: cliente.id,
             },
         });
 
         // ── Se foi o CLIENTE respondendo, reseta o follow-up ──
-        // Isso evita mandar follow-up para quem já está em conversa
+        // Reseta independente do tipo de mensagem (áudio, texto, imagem, etc)
         if (!ehMinha) {
             await prisma.cliente.update({
                 where: { id: cliente.id },

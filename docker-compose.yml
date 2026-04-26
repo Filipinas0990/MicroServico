@@ -31,7 +31,7 @@ services:
     container_name: followup-postgres
     restart: always
     environment:
-      POSTGRES_USER: followup_userI
+      POSTGRES_USER: followup_user
       POSTGRES_PASSWORD: Kelmor123@
       POSTGRES_DB: followup_db
     ports:
