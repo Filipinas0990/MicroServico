@@ -11,7 +11,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const limite = pLimit(10);
 
 export async function verificarSemResposta() {
-    console.log('Verificando clientes no vacuo...');
+    console.log('🔎Verificando clientes no vacuo...');
 
     const vintequatroHorasAtras = new Date();
     vintequatroHorasAtras.setHours(vintequatroHorasAtras.getHours() - 24);
