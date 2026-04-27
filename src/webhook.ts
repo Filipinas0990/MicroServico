@@ -86,7 +86,7 @@ router.post('/webhook', async (req: Request, res: Response) => {
                     followUpFinalizado: false,
                 },
             });
-            console.log(`🔄 Follow-up resetado: ${telefone} respondeu`);
+            console.log(`🔄🔄 Follow-up resetado: ${telefone} respondeu`);
         }
 
         console.log(`💬 ${ehMinha ? 'Corretor' : 'Cliente'}: ${telefone} — ${conteudo.substring(0, 50)}`);
