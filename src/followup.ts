@@ -2,6 +2,7 @@ import 'dotenv/config';
 import cron from 'node-cron';
 import pLimit from 'p-limit';
 import OpenAI from 'openai';
+import { createClient } from 'redis';
 import { ClienteComRelacoes } from './types';
 import prisma from './database';
 import { enviarMensagem, verificarInstancia } from './evolution';
@@ -10,54 +11,79 @@ import { Mensagem } from '@prisma/client';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const limite = pLimit(10);
 
+// ─────────────────────────────────────────
+// REDIS — semáforo para evitar execuções duplas
+// ─────────────────────────────────────────
+async function getRedisClient() {
+    const client = createClient({ url: process.env.REDIS_URL });
+    await client.connect();
+    return client;
+}
+
 export async function verificarSemResposta() {
-    console.log('🔎Verificando clientes no vacuo...');
+    const redis = await getRedisClient();
 
-    const vintequatroHorasAtras = new Date();
-    vintequatroHorasAtras.setHours(vintequatroHorasAtras.getHours() - 24);
+    try {
+        // Tenta adquirir o lock — expira em 29 minutos
+        const lock = await redis.set('cron:followup:lock', '1', { NX: true, EX: 1740 });
 
-    const clientesPendentes = await prisma.cliente.findMany({
-        where: {
-            iaAtiva: true,
-            followUpFinalizado: false,
-            OR: [
-                { ultimoEnvio: null },
-                { ultimoEnvio: { lte: vintequatroHorasAtras } },
-            ],
-        },
-        include: {
-            corretor: true,
-            mensagens: {
-                orderBy: { timestamp: 'desc' },
-                take: 20,
+        if (!lock) {
+            console.log('Execucao anterior ainda rodando, pulando...');
+            return;
+        }
+
+        console.log('Verificando clientes no vacuo...');
+
+        const vintequatroHorasAtras = new Date();
+        vintequatroHorasAtras.setHours(vintequatroHorasAtras.getHours() - 24);
+
+        const clientesPendentes = await prisma.cliente.findMany({
+            where: {
+                iaAtiva: true,
+                followUpFinalizado: false,
+                OR: [
+                    { ultimoEnvio: null },
+                    { ultimoEnvio: { lte: vintequatroHorasAtras } },
+                ],
             },
-        },
-    });
+            include: {
+                corretor: true,
+                mensagens: {
+                    orderBy: { timestamp: 'desc' },
+                    take: 20,
+                },
+            },
+        });
 
-    // Filtra clientes onde:
-    // 1. A última mensagem foi do CORRETOR (fromMe = true)
-    // 2. Essa mensagem do corretor foi há mais de 24 horas
-    const clientesNoVacuo = clientesPendentes.filter((c) => {
-        const ultimaMensagem = c.mensagens[0];
-        if (!ultimaMensagem) return false;
-        if (!ultimaMensagem.fromMe) return false; // cliente respondeu, não entra
+        // Filtra clientes onde:
+        // 1. A última mensagem foi do CORRETOR (fromMe = true)
+        // 2. Essa mensagem do corretor foi há mais de 24 horas
+        const clientesNoVacuo = clientesPendentes.filter((c) => {
+            const ultimaMensagem = c.mensagens[0];
+            if (!ultimaMensagem) return false;
+            if (!ultimaMensagem.fromMe) return false;
 
-        // Verifica se a mensagem do corretor foi há mais de 24h
-        const mensagemHa24h = new Date(ultimaMensagem.timestamp) <= vintequatroHorasAtras;
-        return mensagemHa24h;
-    });
+            const mensagemHa24h = new Date(ultimaMensagem.timestamp) <= vintequatroHorasAtras;
+            return mensagemHa24h;
+        });
 
-    console.log(`${clientesNoVacuo.length} clientes no vacuo`);
+        console.log(clientesNoVacuo.length + ' clientes no vacuo');
 
-    if (clientesNoVacuo.length === 0) return;
+        if (clientesNoVacuo.length > 0) {
+            await Promise.all(
+                clientesNoVacuo.map((cliente: ClienteComRelacoes) =>
+                    limite(() => processarCliente(cliente))
+                )
+            );
+        }
 
-    await Promise.all(
-        clientesNoVacuo.map((cliente: ClienteComRelacoes) =>
-            limite(() => processarCliente(cliente))
-        )
-    );
+        console.log('Verificacao concluida!');
 
-    console.log('Verificacao concluida!');
+    } finally {
+        // Libera o lock e desconecta SEMPRE — mesmo se der erro
+        await redis.del('cron:followup:lock');
+        await redis.disconnect();
+    }
 }
 
 async function processarCliente(cliente: ClienteComRelacoes) {
